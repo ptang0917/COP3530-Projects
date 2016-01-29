@@ -19,6 +19,7 @@ class List{
 		void AddNode(int data);
 		void DeleteNode(int data);
 		void PrintList();
+		void AddStepNode(int data);
 
 };
 
@@ -45,6 +46,30 @@ void List::AddNode(int addData){
 	else {
 		head = n;
 	}
+}
+
+void List::AddStepNode(int Data, int Step, int Num){
+	nodePtr n = new node;
+	nodePtr temp = new node;
+	n->next = NULL;
+	n->data = Data;
+	
+	if(head != NULL) {
+		curr = head;
+		while(curr->next != NULL){
+			curr=curr->next;
+		}
+		curr->next = n;
+
+	}
+	else {
+		head = n;
+	}
+	for(int i = 0; i < Step*(num+1); i++) {
+		curr = head->next;
+		
+	}
+	temp = curr->next;
 }
 
 void List::DeleteNode(int delData){
@@ -84,6 +109,7 @@ int main(int argc, char** argv){
 	int nodenum = 0;
 	int addlist = 0;
 	int j = 0;
+	int step = 0;
 	cout << "Enter the size of the node" << endl;
 	cin >> size;
 	cout << "Add the following nodes" << endl;
@@ -97,12 +123,14 @@ int main(int argc, char** argv){
 	cout << "Enter any additional list " << endl;
 	cin >> addlist;
 	while(j < addlist) {
+		cout << "Enter the number of steps" << endl;
+		cin >> step;
 		cout << "Enter the size of the node" << endl;
 		cin >> size;
 		cout << "Add the following nodes" << endl;
 		for(int k = 0; k < size; k++) {
 			cin >> nodenum;
-			list.AddNode(nodenum);
+			list.AddStepNode(nodenum,step,k);
 		}
 		j++;
 	}
