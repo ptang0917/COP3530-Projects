@@ -9,9 +9,9 @@
 #include <vector>
 #include <algorithm>
 #include <math.h>
-
-//#include <main.h>
+#include <unordered_map>
 using namespace std;
+
 
 bool isNum(const string &symbol)
 {
@@ -49,14 +49,14 @@ bool isOperator(const string &c) {
 	if (c == "+" || c == "-" || c == "*" || c == "/" || c == "^") {
 		return true;
 	}
+	return false;
 }
 
 
 
-void EvaluateExpression(vector<string> outputqueue) {
+double EvaluateExpression(vector<string> outputqueue, unordered_map<string, double> &vars) {
 	stack<double> calculator;
 	stack<double> resultstack;
-	double n;
 	double lVal;
 	double rVal;
 	double result;
@@ -65,16 +65,14 @@ void EvaluateExpression(vector<string> outputqueue) {
 	int end = outputqueue.size();
 	string place;
 
-
-
 	for (int i = 0; i < outputqueue.size(); i++) {
 		if (isNum(outputqueue.at(i))) {
-			n = stod(outputqueue.at(i));
+			double n = stod(outputqueue.at(i));
 			calculator.push(n);
 		}
 		else {
 			if (outputqueue.at(i) == "+") {
-				lVal = calculator.top();
+				lVal = calculator.top(); 
 				calculator.pop();
 				rVal = calculator.top();
 				calculator.pop();
@@ -110,35 +108,47 @@ void EvaluateExpression(vector<string> outputqueue) {
 				else {
 					calculator.push(result);
 				}
-				
+
 			}
 			else if (outputqueue.at(i) == "^") {
 				lVal = calculator.top();
 				calculator.pop();
 				rVal = calculator.top();
 				calculator.pop();
-				result = pow(lVal, rVal);
+				result = pow(rVal, lVal);
 				calculator.push(result);
+			}
+			else {
+				unordered_map<string, double>::const_iterator findvar = vars.find(outputqueue.at(i));
+				if(findvar == vars.end()){
+					cout << "Variable undeclared" << endl;
+					exit(0);
+				
+				}
+				else {
+					double n = vars.at(outputqueue.at(i));
+					calculator.push(n);
+				}
+				
 			}
 
 		}
-		
+
 
 	}
 	answer = calculator.top();
 	resultstack.push(answer);
 	calculator.pop();
-	cout << "result of expression: " << resultstack.top() << endl;
-	resultstack.pop();
+	return resultstack.top();
 }
 
 
-void InFixToPreFix(vector<string> &object) {
+vector<string> InFixToPreFix(vector<string> &object) {
 
 	vector<string> outputqueue;
 	stack<string> opstack;
 
-	for (int i = 0; i < object.size(); i++) {
+	for (int i = 0; i < object.size(); i++) {  //Go thourgh the vector of output stack
 		if (isNum(object.at(i))) {
 			outputqueue.push_back(object.at(i));
 		}
@@ -146,19 +156,22 @@ void InFixToPreFix(vector<string> &object) {
 			if (object.at(i) == "(") {
 				opstack.push(object.at(i));
 			}
-			if (object.at(i) == ")") {
+			else if (object.at(i) == ")") {
 				while (!opstack.empty() && opstack.top() != "(") {
-					outputqueue.push_back(opstack.top());
+					outputqueue.push_back(opstack.top());  //any other operator is being placed to the outputvector instead of '('
 					opstack.pop();
 				}
 				opstack.pop();
 			}
-			if (isOperator(object.at(i)) == true) {
+			else if (isOperator(object.at(i)) == true) {
 				while (!opstack.empty() && Priority(opstack.top()) >= Priority(object.at(i))) {
 					outputqueue.push_back(opstack.top());
 					opstack.pop();
 				}
 				opstack.push(object.at(i));
+			}
+			else { // we have a variable!
+				outputqueue.push_back(object.at(i));
 			}
 		}
 
@@ -169,29 +182,45 @@ void InFixToPreFix(vector<string> &object) {
 		opstack.pop();
 	}
 
-	for (int i = 0; i < outputqueue.size(); i++) {
-		cout << outputqueue.at(i);
-	}
-	EvaluateExpression(outputqueue);
-
+	// uncomment this section for debugging the prefix
+	//    for (int i = 0; i < outputqueue.size(); i++) {
+	//        cout << outputqueue.at(i);
+	//    }
+	return outputqueue;
 }
 
 int main() {
-	string infix;//our infix expression
-	vector<string> object;
 	
-	//infix = "3 ^ 4 + ( 4 / 2 ) * 5";
-	//3 ^ 3 + ( 9 - 3 ) * 4
-	while (1) {
+	unordered_map<string, double> variables_table;
+	while (1) { //the while(1) is to prevent visual studios from closing terminal
+		string infix;//our infix expression
+		vector<string> line;
 		getline(cin, infix);
 		istringstream iss(infix);
 
-		while (iss) {
-			string s;
+		while (iss) { //reads the entire string 
+			string s; 
 			iss >> s;
-			object.push_back(s);
+			if (s != "") {
+				line.push_back(s); //add the string to the vector
+			}
 		}
-		InFixToPreFix(object);
+		if (line.at(0) == "let") { // here is where we execute the let statement
+			vector<string> let_line;
+			string name = line.at(1);
+			for (int i = 3; i < line.size(); i++) { // we start from 3 because object[2] is "="
+				let_line.push_back(line.at(i));
+			}
+			vector<string> prefix_line = InFixToPreFix(let_line);
+			variables_table[name] = EvaluateExpression(prefix_line, variables_table);
+		}
+		else if (line.at(0) == "quit" || line.at(0) == "Quit") {
+			exit(0);
+		}
+		else {
+			vector<string> prefix_line = InFixToPreFix(line);
+			cout << EvaluateExpression(prefix_line, variables_table) << endl;
+		}
 	}
 	return 0;
 }
